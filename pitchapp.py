@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import pairwise_distances
 
-CSV_PATH = 'pitchers.csv'  # your CSV file in repo
+CSV_PATH = 'pitchstats.csv'  # your CSV file in repo
 
 # Stat fields (no extension)
 STAT_FIELDS = [
