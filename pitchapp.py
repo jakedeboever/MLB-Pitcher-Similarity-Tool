@@ -76,7 +76,9 @@ def find_similar_euclidean(df_scaled, stat_cols, reference, top_n=5):
     ref_vec = np.array([reference[c] for c in stat_cols]).reshape(1, -1)
     distances = pairwise_distances(ref_vec, df_scaled[stat_cols].values, metric='euclidean')[0]
     df_scaled['distance'] = distances
+    df_scaled['similarity_score'] = 1 / (1 + df_scaled['distance'])
     return df_scaled.sort_values('distance').head(top_n)
+
 
 # ---- STREAMLIT APP ----
 st.title("⚾ Pitcher Similarity Tool (CSV with combined name)")
