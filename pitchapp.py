@@ -4,9 +4,9 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import pairwise_distances
 
-CSV_PATH = 'pitchstats.csv'  # your CSV file path in repo
+CSV_PATH = 'pitchers.csv'  # your CSV file in repo
 
-# Stat fields — **no extension**
+# Stat fields (no extension)
 STAT_FIELDS = [
     'arm_angle',
     'fast_usage', 'fast_vel', 'fast_ivb', 'fast_hb',
@@ -14,27 +14,25 @@ STAT_FIELDS = [
     'off_usage', 'off_vel', 'off_ivb', 'off_hb'
 ]
 
-# Manual weights only for arm_angle now
 MANUAL_WEIGHTS = {
-    'arm_angle': 1.25
+    'arm_angle': 1.0
 }
 
 def preprocess(df):
-    # Combine first and last names
-    df['player_name'] = df['first_name'] + ' ' + df['last_name']
+    # Use your combined name column exactly as-is
+    df['player_name'] = df['last_name, first_name']
+    
     df['throws'] = df['pitch_hand']
     
-    # Total pitches
+    # Calculate total pitches and usage fractions safely
     df['total_pitches'] = (df['n_fastball_formatted'] +
                            df['n_breaking_formatted'] +
                            df['n_offspeed_formatted'])
-    
-    # Usage fractions (handle division by zero)
     df['fast_usage'] = df['n_fastball_formatted'] / df['total_pitches'].replace(0, np.nan)
     df['brk_usage'] = df['n_breaking_formatted'] / df['total_pitches'].replace(0, np.nan)
     df['off_usage'] = df['n_offspeed_formatted'] / df['total_pitches'].replace(0, np.nan)
     
-    # Rename for consistency
+    # Rename columns to match stat names
     df = df.rename(columns={
         'fastball_avg_speed': 'fast_vel',
         'fastball_avg_break_x': 'fast_hb',
@@ -47,7 +45,7 @@ def preprocess(df):
         'offspeed_avg_break_z_induced': 'off_ivb'
     })
     
-    # Drop rows missing critical data
+    # Drop rows missing critical stats
     df_clean = df.dropna(subset=['arm_angle'] +
                          ['fast_vel', 'fast_hb', 'fast_ivb',
                           'brk_vel', 'brk_hb', 'brk_ivb',
@@ -81,7 +79,7 @@ def find_similar_euclidean(df_scaled, stat_cols, reference, top_n=5):
     return df_scaled.sort_values('distance').head(top_n)
 
 # ---- STREAMLIT APP ----
-st.title("⚾ Pitcher Similarity Tool (No Extension)")
+st.title("⚾ Pitcher Similarity Tool (CSV with combined name)")
 
 try:
     df = pd.read_csv(CSV_PATH)
@@ -107,7 +105,7 @@ else:
     for c in STAT_FIELDS:
         ref_row[c] = st.number_input(c.replace('_', ' ').title(), value=0.0, step=0.1)
 
-# Filter same-handed pitchers
+# Filter to same handedness
 df_filtered = df[df['throws'] == hand].reset_index(drop=True)
 
 # Normalize and weight stats
