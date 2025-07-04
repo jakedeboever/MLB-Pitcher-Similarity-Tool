@@ -15,7 +15,7 @@ STAT_FIELDS = [
 ]
 
 MANUAL_WEIGHTS = {
-    'arm_angle': 2.0
+    'arm_angle': 1.0
 }
 
 def preprocess(df):
