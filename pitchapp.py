@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from pybaseball import statcast
+from pybaseball import statcast, playerid_reverse_lookup
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import pairwise_distances
 
@@ -26,9 +26,31 @@ MANUAL_WEIGHTS = {
 
 # ---- FUNCTIONS ----
 @st.cache_data(show_spinner=False)
+def add_player_info(df):
+    pitcher_ids = df['pitcher'].unique().tolist()
+    info_list = []
+    for pid in pitcher_ids:
+        try:
+            info = playerid_reverse_lookup(pid)
+            if not info.empty:
+                info = info.iloc[0]
+                info_list.append({
+                    'pitcher': pid,
+                    'player_name': f"{info['name_first']} {info['name_last']}",
+                    'throws': info['throws']
+                })
+        except Exception:
+            # If lookup fails, skip that pitcher
+            pass
+    info_df = pd.DataFrame(info_list)
+    df = df.merge(info_df, how='left', on='pitcher')
+    return df
+
+@st.cache_data(show_spinner=False)
 def load_data(start_date, end_date):
     df = statcast(start_date, end_date)
     df = df[df['pitcher'].notnull()]
+    df = add_player_info(df)
     return df
 
 def aggregate(df_raw):
@@ -79,20 +101,20 @@ def find_similar_euclidean(df_scaled, stat_cols, reference, top_n=5):
     return df_scaled.sort_values('distance').head(top_n)
 
 # ---- STREAMLIT APP ----
-st.title("⚾ Pitcher Similarity Tool (Euclidean Distance)")
+st.title("⚾ Pitcher Similarity Tool (2025 Season & Euclidean Distance)")
 
 col1, col2 = st.columns(2)
 with col1:
-    start_date = st.date_input("Start Date", pd.to_datetime("2024-04-01"))
+    start_date = st.date_input("Start Date", value=pd.to_datetime("2025-03-28"))
 with col2:
-    end_date = st.date_input("End Date", pd.to_datetime("2024-09-30"))
+    end_date = st.date_input("End Date", value=pd.to_datetime("2025-10-01"))
 
 if start_date > end_date:
     st.error("End date must be after start date.")
     st.stop()
 
 if st.button("Load Data"):
-    with st.spinner("Loading Statcast data..."):
+    with st.spinner("Loading Statcast data and player info..."):
         raw_data = load_data(start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
         stats_df = aggregate(raw_data)
         stats_scaled, scaler_obj = normalize_and_prepare(stats_df, STAT_FIELDS, MANUAL_WEIGHTS)
