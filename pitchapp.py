@@ -16,7 +16,7 @@ STAT_FIELDS = [
 
 # Arm angle manual weight to make it ~20% of total similarity
 MANUAL_WEIGHTS = {
-    'arm_angle': 1.0
+    'arm_angle': 3.25
 }
 
 # Movement vs Velocity weights (per pitch group)
