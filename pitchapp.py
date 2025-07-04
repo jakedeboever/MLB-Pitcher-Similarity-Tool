@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import pairwise_distances
 
-CSV_PATH = 'pitchers.csv'  # Your uploaded CSV file
+CSV_PATH = 'pitchstats.csv'  # Your uploaded CSV file
 
 # Feature columns (NO extension)
 STAT_FIELDS = [
@@ -16,7 +16,7 @@ STAT_FIELDS = [
 
 # Arm angle manual weight to make it ~20% of total similarity
 MANUAL_WEIGHTS = {
-    'arm_angle': 3.25
+    'arm_angle': 2.0
 }
 
 # Movement vs Velocity weights (per pitch group)
@@ -140,7 +140,7 @@ else:
     ref_vector = df_scaled.loc[ref_idx]
 
 # Slider to choose top N
-top_n = st.slider("How many similar pitchers to show?", min_value=3, max_value=20, value=10)
+top_n = st.slider("How many similar pitchers to show?", min_value=3, max_value=200, value=10)
 
 # Similarity computation
 results_scaled = find_similar_euclidean(df_scaled.copy(), STAT_FIELDS, ref_vector, top_n=top_n)
