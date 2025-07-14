@@ -5,7 +5,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Load the long-format cleaned data
 @st.cache_data
-
 def load_data():
     df = pd.read_csv("stats (2).csv")
     df.rename(columns={"last_name, first_name": "player_name"}, inplace=True)
@@ -39,12 +38,12 @@ def load_data():
     df_long = pd.DataFrame(pitch_rows)
     features = ["avg_speed", "avg_break_x", "avg_break_z_induced", "avg_spin", "arm_angle"]
     df_long = df_long.dropna(subset=features)
-    return df_long, features
+    return df_long
 
-df_long, features = load_data()
+df_long = load_data()
 
-# Weights
-weights = {
+# Available features and their default weights
+all_features = {
     "avg_speed": 1.5,
     "avg_break_x": 1.5,
     "avg_break_z_induced": 1.5,
@@ -58,13 +57,25 @@ mode = st.sidebar.radio("Select Mode", ["Pitcher Lookup", "Manual Input"])
 same_hand_only = st.sidebar.checkbox("Same Handedness Only", value=True)
 num_results = st.sidebar.slider("# of Similar Pitches", 1, 20, 5)
 
+st.sidebar.markdown("### Select Stats to Include")
+enabled_features = []
+for feat in all_features.keys():
+    if st.sidebar.checkbox(f"Use {feat}", value=True):  # default checked
+        enabled_features.append(feat)
+
+if not enabled_features:
+    st.error("⚠️ Please select at least one feature.")
+    st.stop()
+
+weights = {f: all_features[f] for f in enabled_features}
+
 # Normalize features with weights
 scaler = StandardScaler()
-X = df_long[features]
-X_scaled = scaler.fit_transform(X) * [weights[f] for f in features]
+X = df_long[enabled_features]
+X_scaled = scaler.fit_transform(X) * [weights[f] for f in enabled_features]
 
 def get_similar_pitches(input_vector, input_hand=None):
-    input_scaled = scaler.transform([input_vector]) * [weights[f] for f in features]
+    input_scaled = scaler.transform([input_vector]) * [weights[f] for f in enabled_features]
     sims = cosine_similarity(input_scaled, X_scaled)[0]
     df_long_copy = df_long.copy()
     df_long_copy["similarity"] = sims
@@ -80,17 +91,17 @@ if mode == "Pitcher Lookup":
     selected_pitch = st.selectbox("Select Pitch Type", pitch_options)
     selected = matches[matches["pitch_type"] == selected_pitch].iloc[0]
     st.write("### Selected Pitch Stats")
-    st.write(selected[features])
-    results = get_similar_pitches(selected[features].values, selected["pitch_hand"])
+    st.write(selected[enabled_features])
+    results = get_similar_pitches(selected[enabled_features].values, selected["pitch_hand"])
     st.write("### Similar Pitches")
-    st.dataframe(results[["player_name", "pitch_type", "pitch_hand"] + features + ["similarity"]])
+    st.dataframe(results[["player_name", "pitch_type", "pitch_hand"] + enabled_features + ["similarity"]])
 
 else:
     st.write("### Manually Enter Pitch Stats")
     manual_input = {}
-    for f in features:
+    for f in enabled_features:
         manual_input[f] = st.number_input(f, value=float(df_long[f].mean()), step=0.1)
     hand = st.selectbox("Pitcher Handedness", ["R", "L"])
-    results = get_similar_pitches([manual_input[f] for f in features], hand)
+    results = get_similar_pitches([manual_input[f] for f in enabled_features], hand)
     st.write("### Similar Pitches")
-    st.dataframe(results[["player_name", "pitch_type", "pitch_hand"] + features + ["similarity"]])
+    st.dataframe(results[["player_name", "pitch_type", "pitch_hand"] + enabled_features + ["similarity"]])
