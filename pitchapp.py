@@ -73,20 +73,17 @@ def get_similar_pitches(input_vector, input_hand=None):
     return df_long_copy.sort_values("similarity", ascending=False).head(num_results)
 
 if mode == "Pitcher Lookup":
-    pitcher_name = st.text_input("Enter Pitcher Name (e.g., Joe Ryan)")
-    if pitcher_name:
-        matches = df_long[df_long["player_name"].str.contains(pitcher_name, case=False)]
-        if matches.empty:
-            st.warning("No matching pitcher found.")
-        else:
-            pitch_options = matches["pitch_type"].unique()
-            selected_pitch = st.selectbox("Select Pitch Type", pitch_options)
-            selected = matches[matches["pitch_type"] == selected_pitch].iloc[0]
-            st.write("### Selected Pitch Stats")
-            st.write(selected[features])
-            results = get_similar_pitches(selected[features].values, selected["pitch_hand"])
-            st.write("### Similar Pitches")
-            st.dataframe(results[["player_name", "pitch_type", "pitch_hand"] + features + ["similarity"]])
+    all_names = sorted(df_long["player_name"].unique())
+    selected_name = st.selectbox("Choose a pitcher", all_names)
+    matches = df_long[df_long["player_name"] == selected_name]
+    pitch_options = matches["pitch_type"].unique()
+    selected_pitch = st.selectbox("Select Pitch Type", pitch_options)
+    selected = matches[matches["pitch_type"] == selected_pitch].iloc[0]
+    st.write("### Selected Pitch Stats")
+    st.write(selected[features])
+    results = get_similar_pitches(selected[features].values, selected["pitch_hand"])
+    st.write("### Similar Pitches")
+    st.dataframe(results[["player_name", "pitch_type", "pitch_hand"] + features + ["similarity"]])
 
 else:
     st.write("### Manually Enter Pitch Stats")
